@@ -411,11 +411,17 @@ function updatePaymentPreview() {
     return;
   }
 
-  const serviceFee = value * 0.05 * weeks;
+  // Upfront payment covers 50% of the item value, plus logistics.
+  const upfrontPortion = value * 0.5;
+  // The remaining 50% of the item value is the balance the service fee is charged against.
+  const remainingBalance = value * 0.5;
+
+  // 5% of the remaining balance, charged once per selected week (not once per full item value).
+  const serviceFee = remainingBalance * 0.05 * weeks;
   const vatBase = serviceFee;
   const vat = vatBase * 0.075;
   const logistics = estimateLogisticsFee();
-  const upfrontDue = (value * 0.5) + logistics;
+  const upfrontDue = upfrontPortion + logistics;
   const grandTotal = value + serviceFee + vat + logistics;
   const remaining = grandTotal - upfrontDue;
 
@@ -640,5 +646,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Final initialization
 document.addEventListener('DOMContentLoaded', makeDealsClickable);
-
-
