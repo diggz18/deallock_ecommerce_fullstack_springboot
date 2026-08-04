@@ -1,8 +1,13 @@
-HELP.md
+# Maven
+
+# Ignore build output
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Maven Wrapper ###
+# Keep the maven wrapper jar committed to the repo; don't ignore it.
+# (remove any previous ignore for .mvn/wrapper/maven-wrapper.jar)
 
 ### STS ###
 .apt_generated
