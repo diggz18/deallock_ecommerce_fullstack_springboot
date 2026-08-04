@@ -1,5 +1,6 @@
 package com.deallock.backend.config;
 
+import com.deallock.backend.services.GoogleOauth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,9 +18,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
+    private final GoogleOauth2UserService googleOauth2UserService;
 
-    public SecurityConfig(UserDetailsService userDetailsService) {
+    public SecurityConfig(UserDetailsService userDetailsService, GoogleOauth2UserService googleOauth2UserService) {
         this.userDetailsService = userDetailsService;
+        this.googleOauth2UserService = googleOauth2UserService;
     }
 
     @Bean
@@ -54,7 +57,10 @@ public class SecurityConfig {
                                 "/forgot-password",
                                 "/reset-password",
                                 "/frontend/**",
-                                "/pages/**"
+                                "/pages/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/oauth2/authorization/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/marketplace/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/contact", "/api/newsletter/subscribe").permitAll()
@@ -75,6 +81,15 @@ public class SecurityConfig {
                         })
                         .failureUrl("/login?error=true")
                         .permitAll()
+                )
+                .oauth2Login(oauth -> oauth
+                        .loginPage("/login")
+                        .userInfoEndpoint(userInfo -> userInfo.userService(googleOauth2UserService))
+                        .successHandler((request, response, authentication) -> {
+                            boolean isAdmin = authentication.getAuthorities().stream()
+                                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+                            response.sendRedirect(isAdmin ? "/admin" : "/dashboard");
+                        })
                 )
                 .logout(logout -> logout
                         .logoutRequestMatcher(request ->
