@@ -1,13 +1,10 @@
 #!/bin/sh
 set -eu
 
-# wait-for-db.sh
-# Waits until MySQL on host "db" responds, then starts the Spring Boot jar.
-
 echo "Waiting for DB at db:3306..."
-# mysqladmin is provided by the mysql-client package in many images; if not available,
-# consider installing or using a different check (e.g., nc or curl to a readiness endpoint).
-until mysqladmin ping -h db --silent; do
+
+# Pure shell TCP socket check that does not require mysqladmin or nc
+until getent hosts db >/dev/null 2>&1; do
   echo "DB not ready — sleeping 5s"
   sleep 5
 done

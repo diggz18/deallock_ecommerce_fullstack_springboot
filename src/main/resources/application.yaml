@@ -28,6 +28,13 @@ spring:
       # Allow a little overhead for multipart boundaries/fields so a 2MB file doesn't 413.
       max-request-size: 3MB
 
+security:
+  oauth2:
+    client:
+      registration:
+        supabase:
+          client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_SUPABASE_CLIENT_ID}
+          client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_SUPABASE_CLIENT_SECRET}
 server:
   tomcat:
     max-part-count: 200
@@ -54,3 +61,5 @@ ai:
   agent:
     url: http://localhost:8000
     api-key: ${AI_AGENT_API_KEY:}
+  
+

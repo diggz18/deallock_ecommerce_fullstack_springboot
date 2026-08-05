@@ -39,3 +39,8 @@ build/
 .env
 __pycache__/
 .m2/
+# local env & backups
+.env.save
+.env.save.1
+deallock_backup.sql
+*.bak
