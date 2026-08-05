@@ -3,6 +3,7 @@ package com.deallock.backend.config;
 import com.deallock.backend.services.GoogleOauth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableWebSecurity
@@ -19,16 +21,18 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final GoogleOauth2UserService googleOauth2UserService;
+    private final Environment env;
 
-    public SecurityConfig(UserDetailsService userDetailsService, GoogleOauth2UserService googleOauth2UserService) {
+    public SecurityConfig(UserDetailsService userDetailsService, GoogleOauth2UserService googleOauth2UserService, Environment env) {
         this.userDetailsService = userDetailsService;
         this.googleOauth2UserService = googleOauth2UserService;
+        this.env = env;
     }
 
     @Bean
     @SuppressWarnings({"java:S112", "java:S1130"})
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        return httpSecurity
+        HttpSecurity http = httpSecurity
                 .csrf(csrf -> csrf.ignoringRequestMatchers(
                         "/api/**",
                         "/forgot-password",
@@ -81,16 +85,23 @@ public class SecurityConfig {
                         })
                         .failureUrl("/login?error=true")
                         .permitAll()
-                )
-                .oauth2Login(oauth -> oauth
-                        .loginPage("/login")
-                        .userInfoEndpoint(userInfo -> userInfo.userService(googleOauth2UserService))
-                        .successHandler((request, response, authentication) -> {
-                            boolean isAdmin = authentication.getAuthorities().stream()
-                                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-                            response.sendRedirect(isAdmin ? "/admin" : "/dashboard");
-                        })
-                )
+                );
+
+        // Enable OAuth2 login only when a Google client-id is configured in the environment/properties.
+        String googleClientId = env.getProperty("spring.security.oauth2.client.registration.google.client-id");
+        if (StringUtils.hasText(googleClientId)) {
+            http = http.oauth2Login(oauth -> oauth
+                    .loginPage("/login")
+                    .userInfoEndpoint(userInfo -> userInfo.userService(googleOauth2UserService))
+                    .successHandler((request, response, authentication) -> {
+                        boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+                        response.sendRedirect(isAdmin ? "/admin" : "/dashboard");
+                    })
+            );
+        }
+
+        http = http
                 .logout(logout -> logout
                         .logoutRequestMatcher(request ->
                                 "GET".equalsIgnoreCase(request.getMethod())
@@ -121,8 +132,9 @@ public class SecurityConfig {
                                     return path != null && path.startsWith("/api/");
                                 }
                         )
-                )
-                .build();
+                );
+
+        return http.build();
     }
 
     @Bean
