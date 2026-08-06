@@ -1,6 +1,7 @@
 package com.deallock.backend.config;
 
 import com.deallock.backend.services.GoogleOauth2UserService;
+import com.deallock.backend.services.SupabaseOauth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -21,11 +22,14 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final GoogleOauth2UserService googleOauth2UserService;
+    private final SupabaseOauth2UserService supabaseOauth2UserService;
     private final Environment env;
 
-    public SecurityConfig(UserDetailsService userDetailsService, GoogleOauth2UserService googleOauth2UserService, Environment env) {
+    public SecurityConfig(UserDetailsService userDetailsService, GoogleOauth2UserService googleOauth2UserService, 
+                          SupabaseOauth2UserService supabaseOauth2UserService, Environment env) {
         this.userDetailsService = userDetailsService;
         this.googleOauth2UserService = googleOauth2UserService;
+        this.supabaseOauth2UserService = supabaseOauth2UserService;
         this.env = env;
     }
 
@@ -96,6 +100,10 @@ public class SecurityConfig {
                 // Use the Google-specific user service only when Google is configured
                 if (StringUtils.hasText(googleClientId)) {
                     oauth.userInfoEndpoint(userInfo -> userInfo.userService(googleOauth2UserService));
+                }
+                // Use the Supabase-specific user service only when Supabase is configured
+                if (StringUtils.hasText(supabaseClientId)) {
+                    oauth.userInfoEndpoint(userInfo -> userInfo.oidcUserService(req -> supabaseOauth2UserService.loadUser(req)));
                 }
                 oauth.successHandler((request, response, authentication) -> {
                     boolean isAdmin = authentication.getAuthorities().stream()
